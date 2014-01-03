@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JSON Transform</title>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.10.0/css/semantic.min.css"/>
+    <style type="text/css">
+        body, html {
+            margin: 0;
+            height: 100%;
+            background: #eee;
+            font-size: 16pt;
+        }
+
+        .scroll {
+            max-height: 15em;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="ui one column page grid">
+    <div class="column">
+        <div class="huge ui dividing header">
+            JSON Transform
+            <div class="ui sub header">because APIs are weird</div>
+        </div>
+
+        <div class="ui two column grid">
+            <!-- Install Stuff -->
+            <div class="column">
+                <div class="ui segment">
+                    <div class="ui dividing header">
+                        Install Stuff
+                    </div>
+
+                    <div>Node/Browserify</div>
+                    <div class="fluid ui icon left input">
+                        <i class="code icon"></i>
+                        <input type="text" readonly value="npm install json-transform --save"
+                               onmouseover="this.select()" onmouseout="this.blur()"/>
+                    </div>
+                    <div class="ui divider"></div>
+                    <div>Save <a href="dist/json-transform.js">json-transform.js</a> and include it in your page.</div>
+                    <div class="fluid ui icon left input">
+                        <i class="code icon"></i>
+                        <input type="text" readonly value='<script src="/lib/json-transform.js"></script>'
+                               onmouseover="this.select()" onmouseout="this.blur()"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Why -->
+            <div class="column">
+                <div class="ui segment">
+                    <div class="ui dividing header">
+                        Why?
+                    </div>
+                    <div>
+                        <ul>
+                            <li>Because you don't like the JSON you're given</li>
+                            <li>Because you don't like the expected response format</li>
+                            <li>Because you end up doing this anyway, and boilerplate code is bad</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Example of JSON -->
+        <div class="ui segment">
+            <div class="large ui header">
+                An Example
+            </div>
+
+            <p>So, let's say we're making a request to the GitHub API.</p>
+
+            <p>Our URL is <code>"https://api.github.com/repos/knockout/knockout/issues"</code>
+                and we get this response:</p>
+            <pre class="scroll" data-bind="text: rawResponse"></pre>
+        </div>
+
+        <!-- Example Schema -->
+        <div class="ui segment">
+            <div class="large ui header">
+                Basic Schema
+            </div>
+
+            <p>Now we define a Schema for our data. This serves to ensure
+                our data is of the correct type before we try to use it and end up with errors.</p>
+
+            <p>We only need to specify the keys we care about. There's a lot of extra stuff that we'll
+                just ignore from the above response.</p>
+
+            <p>We want to do a couple things with this data.</p>
+            <ul>
+                <li>ensure our data is in the correct format</li>
+                <li>convert all times to Moment.js objects</li>
+            </ul>
+
+            <pre>
+var schema = Schema([{
+    title: String,
+    created_at: moment
+}]);
+            </pre>
+            <p>The above specifies an array of objects; each with a title of type <code>String</code>,
+                and a created_at which should be a <code>moment</code> object. </p>
+
+            <p>If we had an object that needed to be constructed with <code>new</code>, you can use
+                <code>Schema.construct(Foo)</code> which will effectivley call <code>new Foo(data)</code>
+                when we give our schema the data.</p>
+        </div>
+
+
+        <!-- Give it Some Data-->
+        <div class="ui segment">
+            <div class="large ui header">
+                Give it Some Data
+            </div>
+
+            <p>Now we can give it some data, and have it processed propperly.</p>
+            <pre>
+$.getJSON("https://api.github.com/repos/knockout/knockout/issues", functon(data){
+    var fixedData = schema.fix(data);
+})
+</pre>
+
+            <p>But wait... there's more!</p>
+        </div>
+        <!-- Transforms -->
+        <div class="ui segment">
+            <div class="large ui header">
+                Transforms
+            </div>
+
+            <p>The above is nice, and ensures your data is in the correct format,
+                but what if you want something a little more special?</p>
+
+            <p>Say, we need to get all <strong>open</strong> issues with <strong>3 or more comments</strong>;
+                sorted by <strong>most comments first</strong>.
+                For this, we'll need a <code>transform</code></p>
+
+            <pre>
+var getInteresting = Schema.transform({
+    interesting: Schema.ProxyArray("").filter(function(x){
+        return x.state === "open" && x.comments >= 3;
+    }).sortBy(function(x){
+        // sort by comments, highest first
+        return x.comments * -1;
+    })
+});
+
+var fixedData = schema.fix(data, getInteresting);
+            </pre>
+        </div>
+
+        <div class="ui segment">
+            <div class="large ui header">Using The Data</div>
+            <p>Well you probably know how to use resulting JavaScript object, but
+                here's an example rendering of it:</p>
+
+            <p>Basically the following is
+                <code>foreach item in fixedData.interesting: "{{comments}} comments on an issue created {{created_at.from(moment())}}"</code></p>
+
+            <div class="ui segment scroll" data-bind="foreach: interesting()">
+                <div style="display: flex; margin: .3em 1em">
+                    <a class="fluid small blue ui label"
+                       data-bind="text: comments + ' comments', attr: {href: html_url}" style="width: auto"></a>
+
+                    <div style="margin: 0 1em;">
+                        <span>on an issue created</span>
+                        <span data-bind="text: created_at.from(moment())"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ui divider">
+
+        </div>
+    </div>
+</div>
+
+</div>
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.4.0/moment.min.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/knockout/2.3.0/knockout-min.js"></script>
+<script type="text/javascript" src="dist/json-transform.js"></script>
+<script type="text/javascript" style="display: none">
+    function DemoPage() {
+        var self = this;
+
+        var getInteresting = Schema.transform({
+            interesting: Schema.ProxyArray("").filter(function (x) {
+                return x.state === "open" && x.comments >= 3;
+            }).sortBy(function (x) {
+                        // sort by comments, highest first
+                        return x.comments * -1;
+                    })
+        });
+
+        var schema = Schema([
+            {
+                title: String,
+                created_at: moment
+            }
+        ]);
+
+        self.response = ko.observable([]);
+
+        self.rawResponse = ko.computed(function () {
+            return JSON.stringify(self.response(), null, 4);
+        });
+        self.processed = ko.observable({});
+
+        // get the data and populate our observables
+        $.getJSON(apiURL, function (data) {
+            self.response(data);
+        });
+
+        // this uses our getInteresting transform to find interesting information
+        self.interesting = ko.computed(function () {
+            var resp = self.response();
+            if ( resp.length ) {
+                return schema.fix(resp, getInteresting).interesting;
+            } else {
+                return resp;
+            }
+        });
+    }
+    var apiURL = "https://api.github.com/repos/knockout/knockout/issues";
+    var demoPage = new DemoPage();
+    ko.applyBindings(demoPage);
+</script>
+</body>
+</html>

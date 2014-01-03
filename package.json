@@ -1,0 +1,30 @@
+{
+  "name": "json-transform",
+  "version": "0.0.1",
+  "description": "translate json into a structure you want",
+  "main": "src/Schema.js",
+  "directories": {
+    "example": "example",
+    "lib": "src"
+  },
+  "scripts": {
+    "test": "node ./example/test.js"
+  },
+  "keywords": [
+    "json",
+    "structure",
+    "transform",
+    "translate",
+    "browserify",
+    "lazy",
+    "schema"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "lazy.js": "~0.3.0"
+  },
+  "devDependencies": {
+    "browserify": "~3.18.0"
+  }
+}

@@ -1,0 +1,2 @@
+
+window.Schema = require("./Schema");
